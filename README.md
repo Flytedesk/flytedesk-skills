@@ -8,6 +8,7 @@ Skills follow the [Agent Skills](https://agentskills.io) open standard.
 
 | Skill | Description |
 |-------|-------------|
+| **[eli5](skills/eli5)** | Explain any topic, code, concept, or error tailored to a specific audience's level of understanding -- by age, education level, job role, or relationship. |
 | **[npm-package-update](skills/npm-package-update)** | Safely evaluate and perform npm/yarn package updates. Reviewing outdated output, analyzing release notes, handling breaking changes, coordinating with Rails gem dependencies. |
 | **[rails-gem-update](skills/rails-gem-update)** | Safely evaluate and perform Ruby gem updates in a Rails modular monolith. Reviewing bundle outdated output, analyzing release notes, handling migrations, coordinating with frontend dependencies. |
 | **[testing-patterns](skills/testing-patterns)** | Write automated tests using RSpec, Capybara, and FactoryBot for Rails applications. |
