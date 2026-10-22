@@ -172,19 +172,64 @@ Key points:
 - Don't test associations or enums
 
 ### View Component Specs
-Render the component in isolation with `render_inline` and check `page` with Capybara matchers:
+Leave the top-level `describe` bare and split the examples into two second-level groups, each carrying
+the metadata it needs:
+
+- `context 'rendering', type: :component` renders the component in isolation with `render_inline` and
+  checks `page` with Capybara matchers. Fast; no browser.
+- `context 'behavior', :preview` drives the component's ViewComponent preview in a browser with
+  `visit_preview`, for anything that needs JavaScript (Stimulus, Turbo, Shoelace).
+
+A component with no JavaScript has only `rendering`.
 
 ```ruby
-RSpec.describe ReportedIssueBanner, type: :component do
-  it 'names the reporter' do
-    # given
-    issue = build(:issue, reporter_name: 'Pat')
+RSpec.describe CreateAdUnitForm do
+  let(:property) { create(:property) }
 
-    # when
-    render_inline(described_class.new(issue:))
+  context 'rendering', type: :component do
+    it 'names the property' do
+      # when
+      render_inline(described_class.new(property:))
 
-    # then
-    expect(page).to have_content 'Reported by Pat'
+      # then
+      expect(page).to have_content property.name
+    end
+  end
+
+  context 'behavior', :preview do
+    it 'shows the size inputs when a size-constrained sku is selected' do
+      # given
+      visit_preview(CreateAdUnitFormPreview, property_id: property.id)
+
+      # when
+      select 'Banner', from: 'SKU'
+
+      # then
+      expect(page).to have_field('Width')
+    end
+  end
+end
+```
+
+**Setup:** `:preview` makes the group a JavaScript system spec, includes the preview helper and signs a
+user in when previews need authentication:
+
+```ruby
+# spec/support/view_component_previews.rb
+RSpec.configure do |config|
+  config.define_derived_metadata(:preview) do |metadata|
+    metadata[:type] = :system
+    metadata[:js] = true
+  end
+
+  config.include PreviewHelper, :preview
+end
+
+# spec/support/helpers/preview_helper.rb
+module PreviewHelper
+  def visit_preview(preview_class, scenario = :default, **params)
+    path = "/rails/view_components/#{preview_class.preview_name}/#{scenario}"
+    visit(params.any? ? "#{path}?#{params.to_query}" : path)
   end
 end
 ```
