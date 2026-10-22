@@ -8,7 +8,7 @@ Skills follow the [Agent Skills](https://agentskills.io) open standard.
 
 | Skill | Description |
 |-------|-------------|
-| **[bem](skills/bem)** | Name and structure CSS with BEM (Block Element Modifier) on top of Optics. |
+| **[bem-context](skills/bem-context)** | Name and structure CSS with BEM (Block Element Modifier) on top of Optics. |
 | **[eli5](skills/eli5)** | Explain any topic, code, concept, or error tailored to a specific audience's level of understanding -- by age, education level, job role, or relationship. |
 | **[hotwire](skills/hotwire)** | Stimulus controllers, Turbo Frames and Streams, and progressive enhancement. |
 | **[npm-package-update](skills/npm-package-update)** | Safely evaluate and perform npm/yarn package updates. Reviewing outdated output, analyzing release notes, handling breaking changes, coordinating with Rails gem dependencies. |

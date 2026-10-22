@@ -60,7 +60,7 @@ Search for components in this order:
 
 ## BEM Structure
 
-**Block, Element, Modifier naming:**: Name classes with BEM — see the `bem` skill.
+**Block, Element, Modifier naming:**: Name classes with BEM — see the `bem-context` skill.
 
 ## Creating Components
 

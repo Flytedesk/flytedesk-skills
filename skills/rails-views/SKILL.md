@@ -73,7 +73,7 @@ a class=class_names('tab', classes, 'tab--active': active?) href=path
 - Pass a predicate method (`active?`) as the hash value, never an inline expression. If the condition
   needs more than one term, give it a named method in the component.
 - Use BEM modifiers for the conditional keys (`tab--active`), never state words like `active` alone.
-  Class naming rules live in the `bem` skill.
+  Class naming rules live in the `bem-context` skill.
 - With more than two conditionals, move the call into a component method (`tab_class`) and use
   `a class=tab_class`.
 
@@ -105,6 +105,6 @@ domain word (`billing/`); the classes inside it still name artifacts. Existing c
 
 ## Related Skills
 
-- CSS: `bem` and `optics-context` (Shoelace web components for UI primitives such as drawers, tabs, dropdowns)
+- CSS: `bem-context` and `optics-context` (Shoelace web components for UI primitives such as drawers, tabs, dropdowns)
 - Stimulus, Turbo frames and streams: `hotwire`
 - View component specs (`render_inline`): `testing-patterns`

@@ -1,5 +1,5 @@
 ---
-name: bem
+name: bem-context
 description: Expert guidance for writing, refactoring, and structuring CSS using BEM (Block Element Modifier) methodology. Provides proper CSS class naming conventions, component structure, and Optics design system integration for maintainable, scalable stylesheets. Use when naming CSS classes, writing or reviewing stylesheets, or adding classes in SLIM templates.
 metadata:
   triggers: "css review, bem structure, bem methodology, css best practices, refactor css, bem-ify"
