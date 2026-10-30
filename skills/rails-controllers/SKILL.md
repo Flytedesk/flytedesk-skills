@@ -1,83 +1,115 @@
 ---
 name: rails-controllers
-description: Rails controller and routing specialist — RESTful CRUD, strong params, before_actions, response/format handling, error rescues, routing DSL, and security (CSRF, auth, authorization). Use this skill whenever editing or creating files under app/controllers, modifying config/routes.rb or other route files, wiring up new endpoints, debugging routing/params/format issues, or when the user mentions controllers, actions, routes, params, redirects, or strong parameters.
+description: Writes and reviews Rails controllers and routes, covering RESTful actions, strong params, authentication and ActionPolicy authorization, and routing. Use when editing files under app/controllers or config/routes.rb (and other route files), adding endpoints, or debugging routing, params, format or redirect issues.
 ---
 
-# Rails Controllers Specialist
+# Rails Controllers
 
-You are a Rails controller and routing specialist working in the app/controllers directory. Your expertise covers RESTful design, request handling, authentication/authorization, error handling, and routing.
+## RESTful design
 
-## Controller Best Practices
+- Stick to the standard seven actions (index, show, new, create, edit, update, destroy) where possible.
+- One controller per resource. Use member and collection routes sparingly.
+- Keep controllers thin: an action reads params, calls one thing, and renders. That one thing is often a
+  model method. Introduce a service only when the logic spans models or systems.
 
-### RESTful Design
-- Stick to the standard seven actions when possible (index, show, new, create, edit, update, destroy)
-- Use member and collection routes sparingly
-- Keep controllers thin — an action reads params, calls one thing, and renders. That one thing is
-  often a model method; introduce a service only when the logic spans models or systems
-- One controller per resource
+## Strong parameters
 
-### Strong Parameters
+Use `params.expect` (Rails 8):
+
 ```ruby
 def user_params
   params.expect(user: [:name, :email, :role])
 end
 ```
 
-### Before Actions
-- Use for authentication and authorization
-- Set up commonly used instance variables
-- Keep them simple and focused
+## Authentication and authorization
 
-### Response Handling
+The app's base controllers handle authentication and authorization. Names vary by app; in the examples below
+they are `AuthenticatedController` and `authorize_user!`.
+
+- **Inherit from the nearest base controller** in the area you're working in. It may add scoping and a
+  layout on top of the top-level authenticated controller, which runs `authenticate_user!`. Don't add
+  authentication `before_action`s to individual controllers.
+- **Authorization rules live in ActionPolicy policies**, not in controllers. A concern included in the base
+  controller provides an authorize method that raises a not-authorized error, and handles that error once
+  with `rescue_from`. Turbo Frame and Stream requests get an inline 403 alert, and other requests a 403 page.
+  Don't rescue the error or add Turbo guards in individual actions.
+- **Authorize every action** with an explicit rule. Authorize the class for collection actions (`index`,
+  `new`, `create`) and the record for member actions. The policy is found from the controller's namespace,
+  so pass one only when it differs.
+- **For conditional UI** (showing a button or link), use the concern's non-raising check.
+
 ```ruby
-respond_to do |format|
-  format.html { redirect_to @user, notice: 'Success!' }
-  format.json { render json: @user, status: :created }
-end
-```
+class PostsController < AuthenticatedController
+  def index
+    authorize_user!(Post, :index?)
+    @posts = Post.all
+  end
 
-## Error Handling Patterns
-
-```ruby
-rescue_from ActiveRecord::RecordNotFound do |exception|
-  respond_to do |format|
-    format.html { redirect_to root_path, alert: 'Record not found' }
-    format.json { render json: { error: 'Not found' }, status: :not_found }
+  def update
+    @post = Post.find(params[:id])
+    authorize_user!(@post, :update?)
+    # ...
   end
 end
 ```
 
-## API Controllers
+Don't call `skip_forgery_protection` in a controller that serves browsers. JSON-only endpoints belong in
+`ActionController::API` controllers, which have no CSRF protection.
 
-- Use `ActionController::API` base class
-- Implement proper status codes
-- Version your APIs
-- Use serializers for JSON responses
-- Handle CORS appropriately
+## Responding
 
-## Security Considerations
+Turbo acts on the status code, so set it explicitly:
 
-1. Always use strong parameters
-2. Implement CSRF protection (except for APIs)
-3. Validate authentication before actions
-4. Check authorization for each action
+- **A failed form submission** re-renders with `status: :unprocessable_content`. Turbo ignores a 200
+  response to a form submission, so the errors would never appear.
+- **A redirect after a submission** passes `status: :see_other`. After a PATCH or DELETE, a 302 makes the
+  browser repeat that method against the new URL.
 
-## Routing Best Practices
+Base controllers include `PlatformUi::ControllerHelpers`. Use it rather than writing your own:
+
+- **Flash**: the alert container renders only `notice`, `info`, `warning` and `danger`. A Rails `alert:`
+  flash never appears, so report failures with `danger:`.
+- **`send_danger_alert(message, path_helper:)`** reports a failure to either kind of request: a danger alert
+  stream for Turbo, or a 303 redirect with a danger flash for HTML.
+- **`render_top_level_component(modal: ...)`** (or `drawer:`) makes a modal or drawer route work both from a
+  link that targets its frame and as a direct URL.
 
 ```ruby
-resources :users do
-  member do
-    post :activate
-  end
-  collection do
-    get :search
+def destroy
+  @post = Post.find(params[:id])
+  authorize_user!(@post, :destroy?)
+
+  if @post.destroy
+    redirect_to posts_path, status: :see_other, notice: 'Post deleted.'
+  else
+    send_danger_alert(@post.errors.full_messages.to_sentence, path_helper: :posts_path)
   end
 end
 ```
 
-- Use resourceful routes
-- Nest routes sparingly (max 1 level)
-- Use constraints for advanced routing
+## Routing
 
-Remember: Controllers should be thin coordinators. Business logic belongs in models or service
-objects — whichever is the simpler home for it.
+- Use `resources`. Nest at most one level.
+- Reach for constraints only when `resources` can't express the route.
+- Each area of the app keeps its routes in its own file under `config/routes/`, loaded with `draw(:name)`
+  and wrapped in a `namespace`. Add a route to its area's file, not to the main `config/routes.rb`.
+
+## Adding an endpoint
+
+1. Add the route, then run `bin/rails routes -g <name>` to confirm it.
+2. Add the action, using strong params, and authorize it.
+3. Write a request spec under `spec/requests`, signing in the way the app's other request specs do. Cover
+   the authorized path, an unauthorized user, and invalid params for actions that write.
+
+For API endpoints, see the `rails-api` skill.
+
+## Reviewing a controller
+
+```
+- [ ] Inherits from the nearest base controller; no authentication before_actions or authorization rescues
+- [ ] Every action authorizes: the class for collection actions, the record for member actions
+- [ ] Failed submissions render with `:unprocessable_content`; redirects after a submission use `:see_other`
+- [ ] Flash uses `notice`, `info`, `warning` or `danger`, never `alert`
+- [ ] A request spec covers an unauthorized user
+```
