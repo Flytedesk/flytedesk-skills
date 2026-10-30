@@ -1,195 +1,146 @@
 ---
 name: rails-services
-description: Rails service objects and business logic specialist — command/interactor patterns, result objects, transaction management, external API integrations, form objects, query objects, and policy objects. Use this skill whenever extracting logic from fat models or controllers, writing files under app/services, designing complex multi-step operations, integrating third-party APIs, or when the user mentions service objects, business logic, transactions, or "where should this logic go".
+description: Decides whether logic belongs in a service object and writes minimal ones under app/services, including transactions, error handling and external API calls. Use when extracting logic from fat models or controllers, editing files under app/services, designing multi-step operations, integrating third-party APIs, or asking where logic should go.
 ---
 
-# Rails Services Specialist
+# Rails Services
 
-You are a Rails service objects and business logic specialist working in the app/services directory. Your expertise covers service object patterns, design patterns, transaction management, external API integrations, and business rules encapsulation.
+Build the simplest thing that can possibly work, with the fewest elements.
 
-## Before You Build a Service Object
+## Before you build a service object
 
-Follow the project's design philosophy (AGENTS.md): build the simplest thing that can possibly work, with the
-fewest elements.
+A service object is justified when logic spans multiple models, coordinates a multi-step operation, or
+talks to an external system. It is **not** justified for:
 
-A service object is justified when logic spans multiple models, coordinates a multi-step operation,
-or talks to an external system. It is **not** justified for:
+- A single model call. Put it on the model, or in the controller action.
+- A method that only exists to be "not in the controller". A thin controller reads params and calls one
+  thing, and that one thing can be a model method.
+- A wrapper whose `execute` forwards to one other object's method.
 
-- A single model call — put it on the model, or in the controller action
-- A method that only exists to be "not in the controller" — a thin controller is one that reads
-  params and calls one thing; that one thing can be a model method
-- A wrapper whose `call` forwards to one other object's method
+Decide in this order:
 
-The patterns below are a menu, not a checklist. Use the fewest of them that solve the problem, and
-start from the plainest form: a class with `initialize` and `call`, returning the thing it made.
-Add a Result object only when a caller must branch on failure; add dependency injection only when a
-test or a second caller actually needs to pass something different.
+1. One model call: a model method.
+2. Several models, several steps or an external system: a service with `initialize` and `execute`.
+3. Validation failure: return the model unsaved, with its errors (`save`, not `save!`). If earlier steps
+   already wrote rows, raise `ActiveRecord::Rollback` so they are undone too, and copy the failing record's
+   errors onto the model you return so the caller can show them. A failure the caller must tell apart (a
+   declined payment): raise a custom exception for the caller to rescue. Anything else unexpected: raise.
+4. A collaborator that a test or a second caller really needs to swap: inject it. Otherwise reference it
+   directly and stub it in the test.
 
-## Core Responsibilities
+The patterns below are a menu. Use the fewest that solve the problem, starting from a class with
+`initialize` and `execute` that returns the thing it made.
 
-1. **Service Objects**: Extract complex business logic from models and controllers
-2. **Design Patterns**: Implement command, interactor, and other patterns
-3. **Transaction Management**: Handle complex database transactions
-4. **External APIs**: Integrate with third-party services
-5. **Business Rules**: Encapsulate domain-specific logic
+## Basic service
 
-## Service Object Patterns
+Name services verb + noun (`CreateTeam`). Take keyword arguments in `initialize`, and put the work in an
+instance method named `execute`, not `call` or a class-level `.call`, which is the common Rails convention
+but not this codebase's. Every existing service uses `execute`, so a caller never has to check which one
+a given service uses.
 
-### Basic Service Pattern
+Keep the transaction to database writes. Side effects that leave the system, like email or an HTTP call,
+go after the transaction commits: a network call inside it holds the transaction open, and if the commit
+then fails, the call has already happened. (If a caller wraps the service in its own transaction, the email
+is still enqueued before that outer commit.)
+
 ```ruby
-class CreateOrder
-  def initialize(user, cart_items, payment_method)
-    @user = user
-    @cart_items = cart_items
-    @payment_method = payment_method
+class CreateTeam
+  def initialize(owner:, name:, member_ids:)
+    @owner = owner
+    @name = name
+    @member_ids = member_ids
   end
 
-  def call
-    ActiveRecord::Base.transaction do
-      order = create_order
-      create_order_items(order)
-      process_payment(order)
-      send_confirmation_email(order)
-      order
+  def execute
+    team = Team.new(owner: @owner, name: @name)
+
+    ActiveRecord::Base.transaction(requires_new: true) do
+      raise ActiveRecord::Rollback unless team.save && add_members(team)
     end
-  rescue PaymentError => e
-    handle_payment_error(e)
+
+    TeamMailer.created(team).deliver_later if team.persisted?
+    team
   end
 
   private
 
-  def create_order
-    @user.orders.create!(
-      total: calculate_total,
-      status: 'pending'
-    )
-  end
-end
-```
+  def add_members(team)
+    @member_ids.each do |user_id|
+      membership = team.memberships.create(user_id:)
+      next if membership.persisted?
 
-### Result Object Pattern
-```ruby
-class AuthenticateUser
-  Result = Struct.new(:success?, :user, :error, keyword_init: true)
-
-  def initialize(email, password)
-    @email = email
-    @password = password
-  end
-
-  def call
-    user = User.find_by(email: @email)
-
-    if user&.authenticate(@password)
-      Result.new(success?: true, user: user)
-    else
-      Result.new(success?: false, error: 'Invalid credentials')
+      team.errors.merge!(membership.errors)
+      return false
     end
+    true
   end
 end
 ```
 
-## Best Practices
+`ActiveRecord::Rollback` undoes the team and any memberships already saved, and Rails marks `team` as not
+persisted again, so the caller gets an unsaved team carrying the error. `requires_new: true` matters when a
+caller has already opened a transaction: without it, the nested block joins the outer transaction, Rails
+swallows the `Rollback` silently, and nothing is undone.
 
-### Single Responsibility
-- Each service should do one thing well
-- Name services with verb + noun (CreateOrder, SendEmail, ProcessPayment)
-- Keep services focused and composable
+## Dependency injection
 
-### Dependency Injection
-
-Only when a collaborator actually varies. A keyword argument whose default every caller accepts is
-an element to delete, not a seam — reference the collaborator directly and let the test stub it.
+Only when a collaborator actually varies. A keyword argument whose default every caller accepts is an
+element to delete, not a seam.
 
 ```ruby
-# justified: callers pass different channels
-class NotificationService
-  def initialize(channel)
+# justified: callers pass different channels (email, SMS)
+class RemindOverdueCustomers
+  def initialize(channel:)
     @channel = channel
   end
 
-  def notify(user, message)
-    @channel.deliver(user, message)
-  end
-end
-```
-
-### Error Handling
-- Handle errors the system can actually produce — do not rescue conditions that cannot occur
-- Raise a custom exception only when a caller needs to distinguish it from a generic failure
-- Provide meaningful error messages
-- Use a Result object when the caller branches on failure; raise when it cannot
-
-### Testing Services
-```ruby
-RSpec.describe CreateOrder do
-  let(:user) { create(:user) }
-  let(:cart_items) { create_list(:cart_item, 3) }
-  let(:payment_method) { create(:payment_method) }
-
-  subject(:service) { described_class.new(user, cart_items, payment_method) }
-
-  describe '#call' do
-    it 'creates an order with items' do
-      expect { service.call }.to change { Order.count }.by(1)
-        .and change { OrderItem.count }.by(3)
-    end
-
-    context 'when payment fails' do
-      before do
-        allow(PaymentProcessor).to receive(:charge).and_raise(PaymentError)
-      end
-
-      it 'rolls back the transaction' do
-        expect { service.call }.not_to change { Order.count }
-      end
+  def execute
+    Invoice.overdue.includes(:customer).find_each do |invoice|
+      @channel.deliver(invoice.customer, "Invoice #{invoice.number} is overdue")
     end
   end
 end
 ```
 
-## Common Service Types
+## Error handling
 
-### Form Objects
-For complex forms spanning multiple models
+- Handle errors the system can actually produce. Don't rescue conditions that cannot occur.
+- Raise a custom exception only when a caller needs to tell it apart from a generic failure.
+- When wrapping an external service, rescue its network errors (timeouts and connection failures, not
+  only its API errors) and raise one service-specific error.
 
-### Query Objects
-For complex database queries
-
-### Command Objects
-For operations that change system state
-
-### Policy Objects
-For authorization logic
-
-### Decorator/Presenter Objects
-For view-specific logic
-
-## External API Integration
+## Testing
 
 ```ruby
-class WeatherService
-  include HTTParty
-  base_uri 'api.weather.com'
+RSpec.describe CreateTeam do
+  it 'creates the team with its members' do
+    # given
+    owner = create(:user)
+    member_ids = create_list(:user, 2).map(&:id)
 
-  def initialize(api_key)
-    @options = { query: { api_key: api_key } }
+    # when
+    team = described_class.new(owner:, name: 'Design', member_ids:).execute
+
+    # then
+    expect(team).to be_persisted
+    expect(team.memberships.count).to eq(2)
   end
 
-  def current_weather(city)
-    response = self.class.get("/current/#{city}", @options)
+  context 'when a membership is invalid' do
+    it 'rolls back the team and returns its errors' do
+      # given
+      owner = create(:user)
 
-    if response.success?
-      parse_weather_data(response)
-    else
-      raise WeatherAPIError, response.message
+      # when
+      team = described_class.new(owner:, name: 'Design', member_ids: [nil]).execute
+
+      # then
+      expect(team).not_to be_persisted
+      expect(team.errors).to be_present
+      expect(Team.count).to eq(0)
     end
-  rescue HTTParty::Error => e
-    Rails.logger.error "Weather API error: #{e.message}"
-    raise WeatherAPIError, "Unable to fetch weather data"
   end
 end
 ```
 
-Remember: a service earns its place by holding logic that has nowhere simpler to live. If a model
-method or a plain controller action would read as well, that is the better design.
+See the `testing-patterns` skill for spec conventions.

@@ -2,7 +2,7 @@
   "optics_component_classes": {
     "meta": {
       "description": "Complete list of Optics Design System CSS component classes. This does not include app specific overrides or app components.",
-      "optics_version": "2.4.0",
+      "optics_version": "2.5.1",
       "source_files": [
         "node_modules/@rolemodel/optics/dist/css/components/accordion.css",
         "node_modules/@rolemodel/optics/dist/css/components/alert.css",
@@ -32,7 +32,7 @@
         "node_modules/@rolemodel/optics/dist/css/components/tooltip.css"
       ],
       "total_components": 26,
-      "total_classes": 253,
+      "total_classes": 257,
       "components": {
         "accordion": 4,
         "alert": 13,
@@ -45,18 +45,18 @@
         "confirm_dialog": 7,
         "content_header": 6,
         "divider": 8,
-        "form": 14,
-        "icon": 16,
-        "modal": 8,
+        "form": 12,
+        "icon": 17,
+        "modal": 7,
         "navbar": 10,
         "pagination": 5,
-        "segmented_control": 8,
+        "segmented_control": 7,
         "side_panel": 31,
         "sidebar": 15,
         "spinner": 5,
         "switch": 3,
         "tab": 6,
-        "table": 13,
+        "table": 20,
         "tag": 9,
         "text_pair": 16,
         "tooltip": 6
@@ -239,9 +239,7 @@
         "form-error-summary",
         "form-group",
         "form-hint",
-        "form-label",
-        "segmented-control",
-        "switch"
+        "form-label"
       ],
       "modifiers": [
         "form-control--large",
@@ -267,6 +265,7 @@
         "icon--normal-emphasis",
         "icon--outlined",
         "icon--small",
+        "icon--svg",
         "icon--weight-bold",
         "icon--weight-light",
         "icon--weight-normal",
@@ -280,7 +279,6 @@
         "modal-wrapper"
       ],
       "modifiers": [
-        "modal--closing",
         "modal-wrapper--active"
       ],
       "elements": [
@@ -321,7 +319,6 @@
     },
     "segmented_control": {
       "base": [
-        "icon",
         "segmented-control"
       ],
       "modifiers": [
@@ -440,12 +437,19 @@
         "table--container",
         "table--danger",
         "table--default-density",
+        "table--density-comfortable",
+        "table--density-compact",
+        "table--density-default",
         "table--even-striped",
         "table--fixed-layout",
+        "table--layout-auto",
+        "table--layout-fixed",
         "table--odd-striped",
         "table--primary",
         "table--sticky-footer",
-        "table--sticky-header"
+        "table--sticky-header",
+        "table--striped-even",
+        "table--striped-odd"
       ]
     },
     "tag": {
