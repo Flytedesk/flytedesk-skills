@@ -11,16 +11,16 @@ Skills follow the [Agent Skills](https://agentskills.io) open standard.
 | **[bem-context](skills/bem-context)** | Name and structure CSS with BEM (Block Element Modifier) on top of Optics. |
 | **[eli5](skills/eli5)** | Explain any topic, code, concept, or error tailored to a specific audience's level of understanding -- by age, education level, job role, or relationship. |
 | **[hotwire](skills/hotwire)** | Stimulus controllers, Turbo Frames and Streams, and progressive enhancement. |
-| **[npm-package-update](skills/npm-package-update)** | Safely evaluate and perform npm/yarn package updates. Reviewing outdated output, analyzing release notes, handling breaking changes, coordinating with Rails gem dependencies. |
+| **[npm-package-update](skills/npm-package-update)** | Evaluate and perform npm/yarn package updates. Reviewing outdated output, analyzing release notes, handling breaking changes, coordinating with Rails gem dependencies. |
 | **[optics-context](skills/optics-context)** | Style with the Optics design framework: components, tokens and utility classes. |
-| **[rails-api](skills/rails-api)** | REST APIs: JSON:API, OpenAPI, serialization, versioning, token auth and RSwag tests. |
-| **[rails-controllers](skills/rails-controllers)** | Controllers and routing: RESTful actions, strong params, response handling and security. |
-| **[rails-gem-update](skills/rails-gem-update)** | Safely evaluate and perform Ruby gem updates in a Rails modular monolith. Reviewing bundle outdated output, analyzing release notes, handling migrations, coordinating with frontend dependencies. |
-| **[rails-jobs](skills/rails-jobs)** | Background jobs with ActiveJob and GoodJob: idempotency, retries, queues and scheduling. |
+| **[rails-api](skills/rails-api)** | REST APIs that follow JSON:API, with rswag specs that generate the OpenAPI document. |
+| **[rails-controllers](skills/rails-controllers)** | Controllers and routing: RESTful actions, strong params, auth and an endpoint workflow. |
+| **[rails-gem-update](skills/rails-gem-update)** | Evaluate and perform Ruby gem updates in a Rails modular monolith. Reviewing bundle outdated output, analyzing release notes, handling migrations, coordinating with frontend dependencies. |
+| **[rails-jobs](skills/rails-jobs)** | Background jobs with ActiveJob and GoodJob: idempotency, retries and discards, and splitting large work. |
 | **[rails-models](skills/rails-models)** | ActiveRecord models and migrations: validations, associations, scopes and query performance. |
-| **[rails-services](skills/rails-services)** | Service objects: when one is justified, transactions, results and external integrations. |
+| **[rails-services](skills/rails-services)** | Service objects: when one is justified, transactions and error handling. |
 | **[rails-views](skills/rails-views)** | Slim templates, ViewComponents (naming, slots, no template conditionals) and simple_form. |
-| **[testing-patterns](skills/testing-patterns)** | Write automated tests using RSpec, Capybara, FactoryBot and shoulda-matchers for Rails applications. |
+| **[testing-patterns](skills/testing-patterns)** | RSpec, Capybara and FactoryBot specs: given/when/then structure, test data, stubs and time, finding elements by text, and a review checklist. |
 
 ## Installation
 
